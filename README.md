@@ -9,6 +9,13 @@
 
 * [國人全民健康保險就醫疾病資訊]](https://data.nhi.gov.tw/Datasets/DatasetDetail.aspx?id=531&Mid=A111068)
 
+## Prpcess
+
+1. 檢查Data資料夾底下是否有 [ 國人全民健康保險就醫疾病資訊.ods ] 的檔案。
+2. 檢查Data資料夾底下是否有 [ 當年度的資料檔案 ]，沒有則自動去官網下載檔案。
+3. 解析[ 國人全民健康保險就醫疾病資訊.ods ] 的檔案，擷取各年度ods檔案並下載。
+4. 解析各年度ods檔案，回傳JSON格式的資料。
+
 ## Tool
 
 * PuCharm
@@ -26,11 +33,20 @@ $ pip inStall pyexcel_ods
 ----------------------------
 
 ```python
+from urllib.request import urlretrieve
 from flask import jsonify
 from pyexcel_ods import get_data
+import os
+
+#新增資料夾
+os.makedirs( './data', exist_ok=True )
+
+#將資料命名後儲存至資料夾底下
+urlretrieve ("https://data.nhi.gov.tw/Datasets/Download.ashx?rid=A21030000I-D2001B-001&l=http://data.nhi.gov.tw/resource/OpenData/%E5%9C%8B%E4%BA%BA%E5%85%A8%E6%B0%91%E5%81%A5%E5%BA%B7%E4%BF%9D%E9%9A%AA%E5%B0%B1%E9%86%AB%E7%96%BE%E7%97%85%E8%B3%87%E8%A8%8A.ods", "./data/國人全民健康保險就醫疾病資訊.ods")
+
 
 #使用get_data讀取ODS檔案
-data = get_data("2017年國人全民健康保險就醫疾病資訊-1070906.ods", start_row=3, row_limit=20)
+data = get_data("./data/2017年國人全民健康保險就醫疾病資訊-1070906.ods", start_row=3, row_limit=20)
 
 results = []
 d = {} 
