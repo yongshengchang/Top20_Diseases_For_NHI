@@ -36,6 +36,8 @@ $ pip inStall pyexcel_ods
 from urllib.request import urlretrieve
 from flask import jsonify
 from pyexcel_ods import get_data
+import pyexcel_ods
+import urllib
 import os
 
 #新增資料夾
@@ -43,6 +45,19 @@ os.makedirs( './data', exist_ok=True )
 
 #將資料命名後儲存至資料夾底下
 urlretrieve ("https://data.nhi.gov.tw/Datasets/Download.ashx?rid=A21030000I-D2001B-001&l=http://data.nhi.gov.tw/resource/OpenData/%E5%9C%8B%E4%BA%BA%E5%85%A8%E6%B0%91%E5%81%A5%E5%BA%B7%E4%BF%9D%E9%9A%AA%E5%B0%B1%E9%86%AB%E7%96%BE%E7%97%85%E8%B3%87%E8%A8%8A.ods", "./data/國人全民健康保險就醫疾病資訊.ods")
+
+#不需解碼的字元
+b = b'/:?='
+
+data = get_data("./data/國人全民健康保險就醫疾病資訊.ods", start_row=1)
+
+#解析並只下載ODS的檔案
+for TABLE in data["工作表1"]:
+  if TABLE != [] :
+    if TABLE[0].find('ODS') > 0 :
+      urlretrieve(urllib.parse.quote(TABLE[1],b), "./data/"+TABLE[0][0:TABLE[0].find('O')-1]+".ods")
+
+
 
 
 #使用get_data讀取ODS檔案
