@@ -33,36 +33,15 @@ $ pip inStall pyexcel_ods
 ----------------------------
 
 ```python
+from pyexcel_ods import get_data
 from urllib.request import urlretrieve
 from flask import jsonify
-from pyexcel_ods import get_data
-import pyexcel_ods
 import urllib
+import pyexcel_ods
+import json
 import os
 
-#新增資料夾
-os.makedirs( './data', exist_ok=True )
-
-#將資料命名後儲存至資料夾底下
-urlretrieve ("https://data.nhi.gov.tw/Datasets/Download.ashx?rid=A21030000I-D2001B-001&l=http://data.nhi.gov.tw/resource/OpenData/%E5%9C%8B%E4%BA%BA%E5%85%A8%E6%B0%91%E5%81%A5%E5%BA%B7%E4%BF%9D%E9%9A%AA%E5%B0%B1%E9%86%AB%E7%96%BE%E7%97%85%E8%B3%87%E8%A8%8A.ods", "./data/國人全民健康保險就醫疾病資訊.ods")
-
-#不需解碼的字元
-b = b'/:?='
-
-data = get_data("./data/國人全民健康保險就醫疾病資訊.ods", start_row=1)
-
-#解析並只下載ODS的檔案
-for TABLE in data["工作表1"]:
-  if TABLE != [] :
-    if TABLE[0].find('ODS') > 0 :
-      urlretrieve(urllib.parse.quote(TABLE[1],b), "./data/"+TABLE[0][0:TABLE[0].find('O')-1]+".ods")
-
-
-
-
-#使用get_data讀取ODS檔案
-data = get_data("./data/2017年國人全民健康保險就醫疾病資訊-1070906.ods", start_row=3, row_limit=20)
-
+#新增所需陣列
 results = []
 d = {} 
 d["表1"] = []  
@@ -71,43 +50,99 @@ d["表3"] = []
 d["表4"] = [] 
 d["表5"] = [] 
 
-#組合表1~表5的資料
-def func(i):
-  i+=1
-  if i< 4 :
-    for TABLE in data["表"+str(i)]:
-      d["表"+str(i)].append({  
-        'list': i,
-        'year': 2017,
-        'rank': TABLE[0],
-        'name': TABLE[2],
-        'rate': TABLE[9],
-      })
-  elif i== 4:
-    for TABLE in data["表"+str(i)]:
-      d["表"+str(i)].append({  
-        'list': i,
-        'year': 2017,
-        'rank': TABLE[0],
-        'name': TABLE[2],
-        'rate': TABLE[5],
-      })
+#新增資料夾
+os.makedirs( './', exist_ok=True )
+
+#不需解碼的字元
+b = b'/:?='
+
+#檢查檔案是否存在，否就去下載
+if not os.path.isfile(filepath):
+  os.makedirs( '.', exist_ok=True )
+  urlretrieve ("https://data.nhi.gov.tw/Datasets/Download.ashx?rid=A21030000I-D2001B-001&l=http://data.nhi.gov.tw/resource/OpenData/%E5%9C%8B%E4%BA%BA%E5%85%A8%E6%B0%91%E5%81%A5%E5%BA%B7%E4%BF%9D%E9%9A%AA%E5%B0%B1%E9%86%AB%E7%96%BE%E7%97%85%E8%B3%87%E8%A8%8A.ods", "./國人全民健康保險就醫疾病資訊.ods")
+  
+
+#使用get_data取得[國人全民健康保險就醫疾病資訊.ods]檔案，並讀取檔案下載URL
+Main_data = get_data("./國人全民健康保險就醫疾病資訊.ods", start_row=1)
+
+#解析並只下載ODS的檔案
+for TABLE in Main_data["工作表1"]:
+  if TABLE != [] :
+    if TABLE[0].find('ODS') > 0 :
+      FileName = TABLE[0][0:TABLE[0].find('O')-1]+".ods"
+      urlretrieve(urllib.parse.quote(TABLE[1],b), "./data/"+FileName)
+      #使用get_data取得ODS檔案並讀取範圍內資料    
+      data = get_data("./data/"+FileName, start_row=3, row_limit=20)
+      #參數 例:西元年:2016
+      startUp(int(FileName[0:4]))
+
+
+#組合各年度<表1~表5>的資料
+#2017年後檔案裡的儲存格有變動，因此另外做處理
+#list : 檔案裡的SHEET
+#year : 年度
+#rank : 排名
+#name : 疾病代碼列表群組
+#rate : 表1~表4:占率 表5:平均每住院者住院日數(日/人)
+def func(_year,_list):
+  _list += 1
+  if _list <  4 :
+    if _year > 2017 :
+      for TABLE in data["表"+str(_list)]:
+        results.append({  
+          'list': _list,
+          'year': _year,
+          'rank': TABLE[0],
+          'name': TABLE[2],
+          'rate': TABLE[8],
+        })
+    else:
+      for TABLE in data["表"+str(_list)]:
+        results.append({  
+          'list': _list,
+          'year': _year,
+          'rank': TABLE[0],
+          'name': TABLE[2],
+          'rate': TABLE[9],
+        })
+  elif _list == 4:
+    if _year > 2017 :
+      for TABLE in data["表"+str(_list)]:
+        results.append({  
+          'list': _list,
+          'year': _year,
+          'rank': TABLE[0],
+          'name': TABLE[2],
+          'rate': TABLE[4],
+        })
+    else:
+      for TABLE in data["表"+str(_list)]:
+        results.append({  
+          'list': _list,
+          'year': _year,
+          'rank': TABLE[0],
+          'name': TABLE[2],
+          'rate': TABLE[5],
+        })
   else: 
-    for TABLE in data["表"+str(i)]:
-    d["表"+str(i)].append({  
-    'list': i,
-    'year': 2017,
-    'rank': TABLE[0],
-    'name': TABLE[2],
-    'rate': TABLE[6],
-    })       
-  return d["表"+str(i)]
+    for TABLE in data["表"+str(_list)]:
+      results.append({  
+      'list': _list,
+      'year': _year,
+      'rank': TABLE[0],
+      'name': TABLE[2],
+      'rate': TABLE[6],
+      })     
+
+
+#Run迴圈執行Function
+def startUp():    
+    for i in range(5):
+        func(Syear,i)
+
 
 @app.route('/')
 def start():
-    #Run迴圈執行Function
-    for i in range(5):
-        results.append(func(i))
-
     return jsonify(results)
+
 ```
