@@ -65,17 +65,6 @@ if not os.path.isfile(filepath):
 #使用get_data取得[國人全民健康保險就醫疾病資訊.ods]檔案，並讀取檔案下載URL
 Main_data = get_data("./國人全民健康保險就醫疾病資訊.ods", start_row=1)
 
-#解析並只下載ODS的檔案
-for TABLE in Main_data["工作表1"]:
-  if TABLE != [] :
-    if TABLE[0].find('ODS') > 0 :
-      FileName = TABLE[0][0:TABLE[0].find('O')-1]+".ods"
-      urlretrieve(urllib.parse.quote(TABLE[1],b), "./data/"+FileName)
-      #使用get_data取得ODS檔案並讀取範圍內資料    
-      data = get_data("./data/"+FileName, start_row=3, row_limit=20)
-      #參數 例:西元年:2016
-      startUp(int(FileName[0:4]))
-
 
 #組合各年度<表1~表5>的資料
 #2017年後檔案裡的儲存格有變動，因此另外做處理
@@ -84,7 +73,8 @@ for TABLE in Main_data["工作表1"]:
 #rank : 排名
 #name : 疾病代碼列表群組
 #rate : 表1~表4:占率 表5:平均每住院者住院日數(日/人)
-def func(_year,_list):
+def func(_year):
+for _list in range(5):
   _list += 1
   if _list <  4 :
     if _year > 2017 :
@@ -93,7 +83,7 @@ def func(_year,_list):
           'list': _list,
           'year': _year,
           'rank': TABLE[0],
-          'name': TABLE[2],
+          'name': TABLE[1],
           'rate': TABLE[8],
         })
     else:
@@ -112,7 +102,7 @@ def func(_year,_list):
           'list': _list,
           'year': _year,
           'rank': TABLE[0],
-          'name': TABLE[2],
+          'name': TABLE[1],
           'rate': TABLE[4],
         })
     else:
@@ -125,20 +115,36 @@ def func(_year,_list):
           'rate': TABLE[5],
         })
   else: 
-    for TABLE in data["表"+str(_list)]:
-      results.append({  
-      'list': _list,
-      'year': _year,
-      'rank': TABLE[0],
-      'name': TABLE[2],
-      'rate': TABLE[6],
-      })     
+    if _year > 2017 :
+        for TABLE in data["表"+str(_list)]:
+          results.append({  
+          'list': _list,
+          'year': _year,
+          'rank': TABLE[0],
+          'name': TABLE[1],
+          'rate': TABLE[6],
+          })   
+      else : 
+        for TABLE in data["表"+str(_list)]:
+          results.append({  
+          'list': _list,
+          'year': _year,
+          'rank': TABLE[0],
+          'name': TABLE[2],
+          'rate': TABLE[6],
+          })    
 
 
-#Run迴圈執行Function
-def startUp():    
-    for i in range(5):
-        func(Syear,i)
+#解析並只下載ODS的檔案
+for TABLE in Main_data["工作表1"]:
+  if TABLE != [] :
+    if TABLE[0].find('ODS') > 0 :
+      FileName = TABLE[0][0:TABLE[0].find('O')-1]+".ods"
+      urlretrieve(urllib.parse.quote(TABLE[1],b), "./data/"+FileName)
+      #使用get_data取得ODS檔案並讀取範圍內資料    
+      data = get_data("./data/"+FileName, start_row=3, row_limit=20)
+      #參數 例:西元年:2016
+      func(int(FileName[0:4]))
 
 
 @app.route('/')
